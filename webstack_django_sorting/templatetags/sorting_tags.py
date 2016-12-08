@@ -43,7 +43,12 @@ def anchor(parser, token):
     except IndexError:
         title = bits[1].capitalize()
 
-    return SortAnchorNode(bits[1].strip(), title.strip(), title_is_var)
+    exclude_param = None
+    try:
+        exclude_param = bits[3]
+    except IndexError:
+        pass
+    return SortAnchorNode(bits[1].strip(), title.strip(), title_is_var, exclude_param)
 
 
 class SortAnchorNode(template.Node):
@@ -58,16 +63,20 @@ class SortAnchorNode(template.Node):
         <a href="/the/current/path/?sort=name" title="Name">Name</a>
 
     """
-    def __init__(self, field, title, title_is_var):
+    def __init__(self, field, title, title_is_var, exclude_param):
         self.field = field
         self.title = title
         self.title_is_var = title_is_var
+        self.exclude_param = exclude_param
 
     def render(self, context):
         if self.title_is_var:
             self.title = context[self.title]
         request = context['request']
         getvars = request.GET.copy()
+
+        if self.exclude_param and self.exclude_param in getvars:
+            del getvars[self.exclude_param]
 
         if 'sort' in getvars:
             sortby = getvars['sort']
